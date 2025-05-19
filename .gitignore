@@ -1,0 +1,47 @@
+# Byte-compiled / compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+ENV/
+env/
+
+# Logs and database files
+*.log
+instance/
+*.sqlite3
+*.db
+
+# Environment variables
+.env
+*.env
+
+# Python packaging
+*.egg-info/
+dist/
+build/
+pip-wheel-metadata/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.iml
+
+# MacOS system files
+.DS_Store
+
+# Coverage reports
+htmlcov/
+.coverage
+*.cover
+*.py,cover
+
+# Flask-specific
+instance/
+config.py
+config.yaml
+
+# Jupyter Notebook checkpoints (if using Jupyter)
+.ipynb_checkpoints/

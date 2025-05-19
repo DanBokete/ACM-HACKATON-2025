@@ -1,0 +1,105 @@
+:root {
+  --primary-color: #1499f1;
+  --secondary-color: #2ecc71;
+  --background-color: #000000;
+  --text-color: #f6f6f6;
+  --chart-background-color: #525252;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background: var(--background-color);
+  display: flex;
+  flex-direction: row;
+}
+.main-content {
+  width: 100%;
+}
+
+header {
+  background: var(--primary-color);
+  color: white;
+  padding: 20px;
+  text-align: center;
+}
+
+.container {
+  padding: 20px;
+  overflow: hidden;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  margin-bottom: 20px;
+  align-items: flex-end;
+}
+
+.filters label {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.filters input,
+.filters select {
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  min-width: 160px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: transparent;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+  background-color: var(--chart-background-color);
+}
+
+th,
+td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #ccc;
+  color: var(--text-color);
+}
+
+th {
+  background-color: var(--primary-color);
+  color: var(--text-color);
+  cursor: pointer;
+}
+
+th.sort-asc::after {
+  content: " ▲";
+}
+
+th.sort-desc::after {
+  content: " ▼";
+}
+
+tr:last-child td {
+  border-bottom: none;
+}
+
+.status-2xx {
+  color: green;
+}
+
+.status-3xx {
+  color: orange;
+}
+
+.status-4xx {
+  color: darkorange;
+}
+
+.status-5xx {
+  color: red;
+}

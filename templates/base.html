@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Document</title>
+        <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+        {% block head_content %}{% endblock %}
+    </head>
+    <body>
+        <header
+            id="overview"
+            class="flex justify-between bg-gray-100 items-center py-2 px-3 mb-5"
+        >
+            <section class="flex items-center">
+                <a
+                    href="{{ url_for('dashboard')}}"
+                    class="text-lg font-medium mr-5"
+                    >Logfile Review</a
+                >
+                <nav>
+                    <a
+                        class="px-3 py-1.5 bg-gray-200 rounded"
+                        href="{{ url_for('logs') }}"
+                        >Logs</a
+                    >
+                </nav>
+            </section>
+
+            <!-- <div class="filter-container bg-slate-300 px-2 py-2 rounded">
+                <label for="logDate">Select a date:</label>
+                <input
+                    type="date"
+                    id="logDate"
+                    name="logDate"
+                    min="2023-01-01"
+                    max="2023-12-31"
+                />
+            </div> -->
+        </header>
+        {% block body_content %}{% endblock %}
+    </body>
+</html>

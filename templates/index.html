@@ -1,0 +1,878 @@
+
+    {% extends 'base.html' %}
+    {% block head_content %}
+    <!-- <link rel="stylesheet" href="index.css">  -->
+        <!-- <link rel="stylesheet" href="{{ url_for('static', filename='index.css') }}"> -->
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+        <script src="https://cdn.amcharts.com/lib/5/map.js"></script>
+        <script src="https://cdn.amcharts.com/lib/5/geodata/worldLow.js"></script>
+        <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+    {% endblock %}
+    
+    
+    {% block body_content %}
+    
+        <main class="mx-5">
+            <div class="mb-6 flex justify-end">
+
+  <input
+    type="date"
+    id="logDate"
+    name="date"
+    class="border border-gray-300 rounded-md p-2 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+    value="{{ date }}"
+    onchange="onDateChange(this.value)"
+  />
+
+  <a href="{{ url_for('download', date=date)}}" class="p-3 border border-gray-300 rounded shadow ml-5">Download Report</a>
+</div>
+           
+    
+            <div class="metrics flex gap-x-5 mb-5">
+                <div class="metric flex-1 border border-gray-200 rounded-lg px-5 py-2.5 shadow">
+                    <h2>Number of IP's</h2>
+                    <p class="text-4xl">{{number_of_ips.total_ips}}</p>
+                    <span>{% if number_of_ips.percent_change > 0 %}
+        +{{ number_of_ips.percent_change | round(2) }}%
+    {% else %}
+        {{ number_of_ips.percent_change | round(2) }}%
+    {% endif %}</span>
+                </div>
+                
+                <div class="metric flex-1 border border-gray-200 rounded-lg px-5 py-2.5 shadow">
+                    <h2>Total Logs</h2>
+                    <p class="text-4xl">{{total_logs}}</p>
+                    <span>+12.5%</span>
+                </div>
+            </div>
+            <ul>
+    
+    <section class="mt-8">
+
+    {% if suspicious_ips %}
+        <ul class="space-y-4 mb-5">
+        {% for ip in suspicious_ips %}
+            <li class="p-2 border border-red-200 bg-red-50 rounded-lg shadow-sm">
+                <a href="{{url_for('show_ip_info', ip_address=ip.ip, date=date)}}">
+                <p class="text-sm text-gray-700">
+                    <span class="font-semibold text-red-700">IP:</span> {{ ip.ip }}
+                </p>
+                <ul class="list-disc pl-6 mt-2 text-sm text-gray-800">
+                    {% if ip.total_requests %}
+                    <li>Unusually high number of requests: <strong>{{ ip.total_requests }}</strong></li>
+                    {% endif %}
+                    {% if ip.error_rate %}
+                    <li>Elevated error rate: <strong>{{ (ip.error_rate * 100) | round(2) }}%</strong></li>
+                    {% endif %}
+                    {% if ip.unique_paths %}
+                    <li>High number of unique paths accessed: <strong>{{ ip.unique_paths }}</strong></li>
+                    {% endif %}
+                </ul>
+                </a>
+            </li>
+        {% endfor %}
+            </ul>
+        {% else %}
+            <p class="text-gray-500 text-sm">No suspicious IPs detected for this date.</p>
+        {% endif %}
+    </section>
+
+            </ul>
+    
+            <!-- <h2 class="text-xl font-medium my-5">HTTP Status Code Categories</h2> -->
+            
+            <section class="w-full rounded-lg mb-5 flex gap-x-5 mb-5">
+                <div class="border border-gray-200 rounded-lg w-fit px-5 py-5 shadow">
+                    <section class="h-14">
+                        <h2 class="text-lg font-medium">Traffic over 24 hours</h2>
+                        <span class="text-gray-500 font-medium">{{date}}</span>
+                    </section>
+                    <div class="w-full h-0.5 bg-gray-200 my-1"></div>
+                    <div class="flex h-80 justify-center">
+                        <canvas class="h-full" id="peakTimes"></canvas>
+                    </div>
+                </div>
+              
+                <div class="border border-gray-200 rounded w-1/4 px-5 py-5 shadow">
+                    <section class="h-14">
+                        <h2 class="text-lg font-medium">Status code</h2>
+                        <span class="text-gray-500 font-medium">24 hours distribution</span>
+                    </section>
+                    <div class="w-full h-0.5 bg-gray-200 my-1"></div>
+                    <canvas id="chartAll"></canvas>
+                </div>
+
+                <div class="border border-gray-200 rounded w-1/4 px-5 py-5 shadow">
+                    <section class="h-14">
+                        <h2 class="text-lg font-medium">Top endpoints</h2>
+                        <span class="text-gray-500 font-medium">24 hours distribution</span>
+                    </section>
+                    <div class="w-full h-0.5 bg-gray-200 my-1"></div>
+                    <div class="h-10/12">
+                        <canvas id="topEndpoints"></canvas>
+                    </div>
+                </div>
+
+            </section>
+    
+            <div class="flex justify-around gap-x-5 mb-5">
+                <div class="w-3/5 border border-gray-200 rounded px-5 py-5 shadow">
+                    <section class="h-14" id="chart">
+                        <h2 class="text-lg font-medium">Hourly Log code Breakdown</h2>
+                       <span class="text-gray-500 font-medium">24 hours distribution</span>
+                    </section> 
+                    <div class="w-full h-0.5 bg-gray-200 my-1"></div>
+                    <canvas id="logChart"></canvas>   
+                </div>     
+                
+                <div class="w-2/5 border border-gray-200 rounded px-5 py-5 shadow">
+                    <section class="h-14">
+                        <h2>Geographic IP Heat Map</h2>
+                        <span class="text-gray-500 font-medium">24 hours distribution</span>
+                    </section>
+                    <div class="w-full h-0.5 bg-gray-200 my-1"></div>
+                    <div class="w-full h-96" id="chartdiv"></div>
+                </div>
+            </div>
+    
+            <div class="flex gap-x-5 mb-5">
+                <div class="w-1/2 border border-gray-200 rounded px-5 py-5 shadow">
+                    <section class="h-14">
+                        <h2>Avg Response Size</h2>
+                        <span class="text-gray-500 font-medium">24hrs distribution</span>
+                    </section>
+                    <div class="w-full h-0.5 bg-gray-200 my-1"></div>
+                    <div class="h-full">
+                        <canvas id="avgResponseSize"></canvas>
+                    </div>
+                </div>
+
+                <div class="w-1/2 border border-gray-200 rounded px-5 py-5 shadow">
+                    <section class="h-14">
+                        <h2>Error Rate</h2>
+                        <span class="text-gray-500 font-medium">Last 24hrs distribution</span>
+                    </section>
+                    <div class="w-full h-0.5 bg-gray-200 my-1"></div>
+                    <canvas id="errorRate"></canvas>
+                </div>
+            </div>
+    
+            <!-- <div class="flex gap-x-5 border-collapse shadow mb-5">
+                <section class="w-1/3 border border-gray-200 rounded p-5">
+                    <h2 class="text-center text-xl mb-3">Noisey IP's</h2>
+                    <table class="table-auto w-full text-center">
+                        <thead>
+                            <tr>
+                                <th scope="col">IP Address</th>
+                                <th scope="col">Request Count</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                             {% for ip in noisy_ip %}
+                            <tr>
+                            <td>{{ ip.ip }}</td>
+                            <td>{{ ip.count }}</td>
+                            </tr>
+                            {% endfor %}
+                    
+                        </tbody>
+                    </table>
+                </section>
+                <section class="w-1/3 border border-gray-200 rounded p-5">
+                    <h2 class="text-center text-xl mb-3">Traffic Spike</h2>
+                    {% if traffic_spikes %}
+                    <table class="table-auto w-full text-center">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Request Count</th>
+                            </tr>
+                        </thead>
+                       
+                        <tbody>
+                            <tr> 
+                                <td>{{ traffic_spikes[0]["hour"]  ~ ':00'}}</td>
+                                <td>{{ traffic_spikes[0]["count"] }}</td>
+                            </tr>
+                 
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <p class="text-center">No spikes recorded</p>
+                    {% endif %}
+                </section>
+                <section class="w-1/3 border border-gray-200 rounded p-5">
+                    <h2 class="text-center text-xl mb-3">Last Error Spike</h2>
+                    <table class="table-auto w-full text-center">
+                        <tr>
+                            <th>Time</th>
+                            <th>Error Count</th>
+                        </tr>
+                        <tr>
+                            <td>12:00</td>
+                            <td>10</td>
+                        </tr>
+                        <tr>
+                            <td>13:00</td>
+                            <td>20</td>
+                        </tr>
+                        <tr>
+                            <td>14:00</td>
+                            <td>30</td>
+                        </tr>
+                </div> -->
+            </div>
+    
+            <script>
+                function onDateChange(date) {
+    if (!date) return;
+    const url = new URL(window.location.href);
+    url.searchParams.set('date', date);
+    window.location.href = url.toString(); // reload with ?date=YYYY-MM-DD
+  }
+
+                const Xaxis = '#000';
+                const Yaxis = '#000';
+                const gridColor = 'transparent';
+                const backgroundColor = '#2c3e50';
+                const textColor = '#000';
+                const error100 = '#3498db';
+                const error200 = '#2ecc71';
+                const error300 = '#f1c40f';
+                const error400 = '#e67e22';
+                const error500 = '#e74c3c';
+                const labelColor = '#000';
+    
+    
+ -->
+                document.getElementById("logDate").addEventListener("change", function () {
+                    const selectedDate = this.value;
+    
+                    fetch('/filter-date', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ date: selectedDate })
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            console.log('Filtered data received:', data);
+    
+                            // Example: update chart or table here
+                            // updateChart(logChart, data.chartData);
+                        })
+                        .catch(error => console.error('Error:', error));
+                });
+
+                 function downloadLog() {
+                    fetch('/download?date={{ date | tojson }}')
+                        .then(response => response.blob())
+                        .then(blob => {
+                            const url = window.URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = 'metrics_log.txt';
+                            document.body.appendChild(a);
+                            a.click();
+                            a.remove();
+                        });
+                    }
+    
+    
+    
+    
+    
+                const errorCtx = document.getElementById('errorRate').getContext('2d');
+    
+                const errorData = {{error_rates["counts"] | tojson}}
+    
+                new Chart(errorCtx, {
+                    type: 'line',
+                    data: {
+                        labels: [
+                            '00:00', '01:00', '02:00', '03:00', '04:00', '05:00',
+                            '06:00', '07:00', '08:00', '09:00', '10:00', '11:00',
+                            '12:00', '13:00', '14:00', '15:00', '16:00', '17:00',
+                            '18:00', '19:00', '20:00', '21:00', '22:00', '23:00'
+                        ],
+                        datasets: [{
+                            label: 'Error Rate (%)',
+                            data: errorData,
+                            borderColor: '#000',
+                            backgroundColor: 'transparent',
+                            fill: false,
+                            tension: 0.3,
+                            segment: {
+                                borderColor: ctx => {
+                                    if (!ctx.p0 || !ctx.p1) return '#000'; // fallback
+                                    const prev = ctx.p0.parsed.y;
+                                    const next = ctx.p1.parsed.y;
+                                    return next > prev ? '#ff4d4f' : '#2ecc71';
+                                }
+                            },
+                            pointRadius: 3,
+                            pointBorderWidth: 1,
+                            pointBorderColor: '#fff',
+                            pointHoverRadius: 5,
+                            pointBackgroundColor: (ctx) => {
+                                const index = ctx.dataIndex;
+                                const data = ctx.chart.data.datasets[0].data;
+    
+                                if (index === 0) return '#999'; // neutral for the first point
+    
+                                const prev = data[index - 1];
+                                const curr = data[index];
+                                return curr > prev ? '#ff4d4f' : '#2ecc71';
+                            },
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                labels: {
+                                    color: textColor
+                                }
+                            },
+                            title: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: {
+                                    color: gridColor
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'Time of Day',
+                                    color: Xaxis
+                                },
+                                ticks: {
+                                    color: 'transparent',
+                                    maxTicksLimit: 10,
+                                    padding: 5
+                                }
+                            },
+                            y: {
+                                beginAtZero: true,
+                           
+                                title: {
+                                    display: true,
+                                    text: 'Error Rate (%)',
+                                    color: Yaxis
+                                },
+                                ticks: {
+                                    color: Yaxis,
+                                    callback: value => value + '%'
+                                }
+                            }
+                        }
+                    }
+                });
+    
+    
+    
+    
+    
+    
+                const avgResponseSizeCtx = document.getElementById('avgResponseSize').getContext('2d');
+                new Chart(avgResponseSizeCtx, {
+                    type: 'line',
+                    data: {
+                        labels: ['00:00', '01:00', '02:00', '03:00', '04:00', '05:00', '06:00', '07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00'],
+                        datasets: [{
+                            label: "Avg Response Size",
+                            data: {{ avg_response_size["hours"] | tojson }},
+                            backgroundColor: error200,
+                            borderColor: error200,
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    color: labelColor // white legend text
+                                }
+                            },
+                            title: {
+                                display: true,
+                                text: 'Average Response Size',
+                                color: textColor
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: {
+                                    color: gridColor
+                                },
+                                ticks: {
+                                    color: Xaxis,// white x-axis labels
+                                    maxTicksLimit: 10,
+                                }
+                            },
+                            y: {
+                                grid: {
+                                    color: gridColor
+                                },
+                                ticks: {
+                                    color: Yaxis // white y-axis labels
+                                },
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+    
+                const topEndpointsCtx = document.getElementById('topEndpoints').getContext('2d');
+    
+                new Chart(topEndpointsCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: {{top_endpoints["paths"] | tojson}},
+                        datasets: [{
+                            label: 'Number of Requests',
+                            data: {{top_endpoints["count"] | tojson}},
+                            backgroundColor: [
+                                'rgba(52, 152, 219, 0.8)',
+                                'rgba(46, 204, 113, 0.8)',
+                                'rgba(241, 196, 15, 0.8)'
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    color: labelColor// white legend text
+                                }
+                            },
+                            title: {
+                                display: true,
+                                text: 'Top API Endpoints',
+                                color: textColor
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: {
+                                    color: gridColor
+                                },
+                                ticks: {
+                                    color: Xaxis // white x-axis labels
+                                }
+                            },
+                            y: {
+                                grid: {
+                                    color: gridColor
+                                },
+                                ticks: {
+                                    color: Yaxis // white y-axis labels
+                                },
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+    
+                console.log("{{ traffic_for_day }}") // Debugging line
+    
+    
+    
+                // Mock data: number of logs per hour
+                const peakCtx = document.getElementById('peakTimes').getContext('2d');
+                new Chart(peakCtx, {
+                    type: 'line',
+                    data: {
+                        labels: ['00:00', '01:00', '02:00', '03:00', '04:00', '05:00', '06:00', '07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00'],
+                        datasets: [{
+                            label: 'Total Logs',
+                            borderColor: '#3aeb34',
+                            backgroundColor: 'rgba(44, 62, 80, 0.2)',
+                            fill: true,
+                            tension: 0.3,
+                            data: {{ traffic_for_day['hours'] | tojson }},
+                }]
+                    },
+                    options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: textColor // white legend text
+                            }
+                        },
+                        title: {
+                            display: false,
+                            color: textColor,
+                        },
+                        legend: {
+                            display: false,
+                            color: textColor
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                color: gridColor
+                            },
+                            title: {
+                                display: true,
+                                text: 'Time of Day',
+                                color: Xaxis
+                            },
+                            ticks: {
+                                color: Xaxis,
+                                maxTicksLimit: 10,
+                                padding: 5,
+    
+    
+                            },
+                        },
+                        y: {
+                  
+                            title: {
+                                display: true,
+                                text: 'Number of Logs',
+                                color: Yaxis
+                            },
+                            ticks: {
+                                color: Yaxis // white y-axis labels
+                            },
+                            beginAtZero: true
+                        }
+                    }
+                }
+                });
+    
+                // Mock data: number of HTTP responses in each category
+                const responseData = {
+                   "2xx": Number("{{ status_codes.get('2xx', 0) }}"),
+    "3xx": Number("{{ status_codes.get('3xx', 0) }}"),
+    "4xx": Number("{{ status_codes.get('4xx', 0) }}"),
+    "5xx": Number("{{ status_codes.get('5xx', 0) }}"),
+                };
+    
+    
+                // Plugin to display center percentage text for the largest slice
+                const centerTextPlugin = {
+                    id: 'centerText',
+                    afterDraw(chart) {
+                        if (chart.config.type !== 'doughnut') return;
+    
+                        const { ctx, width, height } = chart;
+                        const datasets = chart.data.datasets[0];
+                        const data = datasets.data;
+                        const total = data.reduce((a, b) => a + b, 0);
+                        const maxIndex = data.indexOf(Math.max(...data));
+                        const value = data[maxIndex];
+                        const percent = ((value / total) * 100).toFixed(1) + '%';
+    
+                        ctx.save();
+                        ctx.font = 'bold 24px Arial';
+                        ctx.fillStyle = chart.data.datasets[0].backgroundColor[maxIndex];
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText(percent, width / 2.6, height / 1.8);
+                        ctx.restore();
+                    }
+                };
+    
+                Chart.register(centerTextPlugin);
+    
+                // Create a single doughnut chart
+                new Chart(document.getElementById("chartAll"), {
+                    type: 'doughnut',
+                    data: {
+                        labels: Object.keys(responseData),
+                        datasets: [{
+                            data: Object.values(responseData),
+                            backgroundColor: ['#3498db', '#2ecc71', '#f1c40f', '#e67e22', '#e74c3c'],
+                            borderWidth: 1,
+                            borderRadius: 8,
+                            hoverOffset: 5
+    
+                        }]
+                    },
+                    options: {
+                        cutout: '70%',
+                        responsive: true,
+                        
+                        plugins: {
+                            centerText: {},
+                            title: {
+                                display: true,
+                                text: "HTTP Response Categories",
+                                color: textColor
+                            },
+                            legend: {
+                                display: true,
+                                position: 'right',
+                                color: textColor,
+                                labels: {
+                                    color: textColor,
+                                    padding: 20,
+                                    usePointStyle: true,
+                                    pointStyle: 'circle',
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function (context) {
+                                        const total = context.dataset.data.reduce((a, b) => a + b);
+                                        const val = context.raw;
+                                        const percent = ((val / total) * 100).toFixed(1);
+                                        return `${context.label}: ${val} (${percent}%)`;
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    plugins: [centerTextPlugin]
+                });
+    
+                const ctx = document.getElementById('logChart').getContext('2d');
+                const logChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: [
+                            '00:00', '01:00', '02:00', '03:00', '04:00', '05:00', '06:00',
+                            '07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '13:00',
+                            '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00',
+                            '21:00', '22:00', '23:00'
+                        ],
+                        datasets: [
+                            {
+                                label: '2XX',
+                                data: {{ status_codes_bar_data["2xx"] | tojson }},
+                    backgroundColor: 'rgba(46, 204, 113, 0.8)',
+                    stack: 'logs',
+                },
+                    {
+                        label: '3XX',
+                        data: {{ status_codes_bar_data["3xx"] | tojson }},
+                backgroundColor: 'rgba(241, 196, 15, 0.8)',
+                    stack: 'logs',
+                },
+                {
+                    label: '4XX',
+                        data: {{ status_codes_bar_data["4xx"] | tojson }},
+                    backgroundColor: 'rgba(231, 76, 60, 0.8)',
+                        stack: 'logs',
+                },
+                {
+                    label: '5XX',
+                        data: {{ status_codes_bar_data["5xx"] | tojson }},
+                    backgroundColor: 'rgba(155, 89, 182, 0.8)',
+                        stack: 'logs',
+                }
+            ]
+        },
+                options: {
+                    responsive: true,
+                        plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    const dataset = context.dataset;
+                                    const total = context.chart.data.datasets.reduce(
+                                        (sum, ds) => sum + (ds.data[context.dataIndex] || 0),
+                                        0
+                                    );
+                                    const value = dataset.data[context.dataIndex];
+                                    const percent = ((value / total) * 100).toFixed(1);
+                                    return `${dataset.label}: ${value} (${percent}%)`;
+                                }
+                            }
+                        },
+                        legend: {
+                            position: 'top',
+                                labels: {
+                                color: textColor,
+                                    padding: 20,
+                                        usePointStyle: true,
+                                            pointStyle: 'circle',
+                    }
+                        },
+                        title: {
+                            display: false,
+                                color: textColor,
+                }
+                    },
+                    scales: {
+                        x: {
+                            stacked: true,
+                                title: {
+                                display: true,
+                                    text: 'Hour',
+                                        color: textColor,
+                    },
+                            ticks: {
+                                color: Xaxis,
+                    },
+                            grid: {
+                                color: gridColor,
+                    }
+                        },
+                        y: {
+                            stacked: true,
+                                beginAtZero: true,
+                                    title: {
+                                display: true,
+                                    text: 'Total Requests',
+                                        color: textColor,
+                    },
+                            ticks: {
+                                color: Yaxis,
+                    },
+                            grid: {
+                                color: gridColor,
+                    }
+                        }
+                    }
+                }
+    });
+    
+                window.addEventListener('load', function () {
+                    if (document.getElementById("chartdiv")) {
+                        am5.ready(function () {
+    
+                            var data = {{ geographic_data | tojson
+                        }}
+    
+                    console.log(data)
+                    var root = am5.Root.new("chartdiv");
+                    root.setThemes([am5themes_Animated.new(root)]);
+    
+                    var chart = root.container.children.push(am5map.MapChart.new(root, {}));
+    
+                    var polygonSeries = chart.series.push(
+                        am5map.MapPolygonSeries.new(root, {
+                            geoJSON: am5geodata_worldLow,
+                            exclude: ["AQ"]
+                        })
+                    );
+    
+                    var bubbleSeries = chart.series.push(
+                        am5map.MapPointSeries.new(root, {
+                            valueField: "value",
+                            calculateAggregates: true,
+                            polygonIdField: "id"
+                        })
+                    );
+    
+                    var circleTemplate = am5.Template.new({});
+    
+                    bubbleSeries.bullets.push(function (root, series, dataItem) {
+                        var container = am5.Container.new(root, {});
+    
+                        var circle = container.children.push(
+                            am5.Circle.new(root, {
+                                radius: 10,
+                                fillOpacity: 0.7,
+                                fill: am5.color(0xff0000),
+                                cursorOverStyle: "pointer",
+                                tooltipText: `{name}: [bold]{value}[/]`
+                            }, circleTemplate)
+                        );
+    
+                        var labelList = []; // Store references to labels
+    
+                        var countryLabel = container.children.push(
+                            am5.Label.new(root, {
+                                text: "{name}",
+                                paddingLeft: 5,
+                                populateText: true,
+                                fontWeight: "bold",
+                                fontSize: 13,
+                                centerY: am5.p50,
+                                visible: false // Hide by default
+                            })
+                        );
+                        labelList.push(countryLabel); // Store label reference
+    
+    
+                        circle.on("radius", function (radius) {
+                            countryLabel.set("x", radius);
+                        });
+    
+                        return am5.Bullet.new(root, {
+                            sprite: container,
+                            dynamic: true
+                        });
+                    });
+    
+                    bubbleSeries.bullets.push(function (root, series, dataItem) {
+                        return am5.Bullet.new(root, {
+                            sprite: am5.Label.new(root, {
+                                text: "{value.formatNumber('#.')}",
+                                fill: am5.color(0xffffff),
+                                populateText: true,
+                                centerX: am5.p50,
+                                centerY: am5.p50,
+                                textAlign: "center"
+                            }),
+                            dynamic: true
+                        });
+                    });
+    
+                    bubbleSeries.set("heatRules", [
+                        {
+                            target: circleTemplate,
+                            dataField: "value",
+                            min: 5,
+                            max: 20,
+                            minValue: 0,
+                            maxValue: 100,
+                            key: "radius"
+                        }
+                    ]);
+    
+                    bubbleSeries.data.setAll(data);
+    
+                    // Listen to zoom events
+                    chart.events.on("zoomended", function () {
+                        var zoomLevel = chart.get("zoomLevel");
+                        console.log("Zoom level:", zoomLevel);
+    
+                        labelList.forEach(function (label) {
+                            label.set("visible", zoomLevel > 1.5); // Show if zoom > 1.5x
+    
+                        });
+                    });
+    
+                    updateData();
+                    setInterval(function () {
+                        updateData();
+                    }, 2000)
+    
+                    function updateData() {
+                        for (var i = 0; i < data.length; i++) {
+                            bubbleSeries.data.setIndex(i, {
+                                id: data[i].id,
+                                name: data[i].name,
+                                value: data[i].value
+                            });
+                        }
+                    }
+    
+                }); // end am5.ready()
+                    }
+                });
+    
+    
+            </script>
+    
+    {% endblock %}
+    
+    </html>
+    

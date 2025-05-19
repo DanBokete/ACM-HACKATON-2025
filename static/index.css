@@ -1,0 +1,184 @@
+:root {
+  --primary-color: #1499f1;
+  --secondary-color: #2ecc71;
+  --background-color: #000000;
+  --text-color: #f6f6f6;
+  --chart-background-color: #525252;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background: var(--background-color);
+  display: flex;
+  flex-direction: row;
+}
+
+.main-content {
+  width: 100%;
+}
+
+header {
+  background: var(--primary-color);
+  color: white;
+  padding: 20px;
+  text-align: center;
+}
+
+.metrics {
+  display: flex;
+  justify-content: space-around;
+  padding: 20px;
+  background: var(--background-color);
+}
+
+.metric {
+  color: var(--text-color);
+  background: var(--chart-background-color);
+  border-radius: 8px;
+  padding: 10px;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+  width: 15%;
+  text-align: center;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  background: transparent;
+}
+
+th,
+td {
+  border-bottom: solid 1px #fff;
+  padding: 12px;
+  text-align: left;
+}
+
+th {
+  background: none;
+  border-bottom: solid 5px #fff;
+}
+
+.container {
+  padding: 20px;
+}
+
+.section-title {
+  margin-top: 40px;
+}
+
+.chart-grid {
+  width: 400px;
+  height: 400px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: space-around;
+}
+
+.chart-box {
+  width: 250px;
+  height: 250px;
+}
+
+/* canvas {
+  background-color: var(--chart-background-color);
+  color: var(--text-color);
+} */
+/* .content {
+  padding: 20px;
+  display: flex;
+  flex-direction: row;
+  canvas {
+    width: 300px;
+    height: 300px;
+  }
+  .chart-container {
+    width: 400px;
+    height: 450px;
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    margin: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+  }
+} */
+
+.content {
+  padding: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: space-around;
+  justify-content: flex-start;
+  div {
+    background-color: var(--chart-background-color);
+    color: var(--text-color);
+  }
+}
+
+.chart-container {
+  width: 400px;
+  height: 450px;
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  margin: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.chartL {
+  width: 800px;
+}
+.chartM {
+  width: 600px;
+}
+
+#chartdiv {
+  width: 600px;
+  height: 400px;
+}
+.chartdiv {
+  width: 600px;
+  height: 450px;
+  background-color: white;
+  border-radius: 8px;
+  margin: 10px;
+  padding: 20px;
+  text-align: center;
+  canvas {
+    background-color: transparent;
+    width: 600px;
+    height: 450px;
+  }
+  div {
+    background-color: transparent;
+    height: 450px;
+    width: 600px;
+  }
+}
+
+.filter-container {
+  position: absolute;
+  right: 2em;
+  top: 4em;
+
+  margin: 20px;
+  font-family: Arial, sans-serif;
+}
+.filter-container input {
+  padding: 5px 10px;
+  font-size: 1em;
+  background-color: var(--primary-color);
+  border: none;
+  color: var(--text-color);
+}

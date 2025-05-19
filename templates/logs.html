@@ -1,0 +1,172 @@
+
+
+   {% extends 'base.html' %}
+    {% block head_content %}
+    <title>Logs</title>
+    {% endblock %}
+
+    {% block body_content %}
+    <main>
+        <div class="mx-5">
+            <div class="flex rounded items-center gap-x-2  w-fit ml-auto mb-5">
+                <div class="border rounded-lg bg-gray-100 border-gray-200 p-3 rounded">
+                    <label for="statusFilter">Status</label>
+                    <select id="statusFilter">
+                        <option value="All">All</option>
+                        <option value="2">2xx</option>
+                        <option value="3">3xx</option>
+                        <option value="4">4xx</option>
+                        <option value="5">5xx</option>
+                    </select>
+                </div>
+
+                <div class="border rounded-lg bg-gray-100 border-gray-200 p-3 rounded">
+                    <label for="dateFilter">Date</label>
+                    <input type="date" id="dateFilter" />
+                </div>
+
+                <div class="border rounded-lg bg-gray-100 border-gray-200 p-3 rounded">
+                    <label for="userAgentFilter">User Agent</label>
+                    <input type="text" id="userAgentFilter" placeholder="e.g. Mozilla" />
+                </div>
+            </div>
+
+            <table class="w-full overflow-scroll" id="logTable" >
+                <thead class="bg-gray-100 font-semibold tracking-wider">
+                    <tr>
+                        <th data-column="ip" class="px-6 py-3">IP Address</th>
+                        <th data-column="time" class="px-6 py-3">Timestamp</th>
+                        <th data-column="method" class="px-6 py-3">Method</label>
+                        <th data-column="status_code" class="px-6 py-3">Status</th>
+                        <th data-column="user_agent" class="px-6 py-3">User Agent</th>
+                        <th data-column="path" class="px-6 py-3">Path</th>
+                    </tr>
+                </thead>
+                <tbody  class="divide-y divide-gray-200 text-center"></tbody>
+            </table>
+        </div>
+    </div>
+
+    
+
+    <script>
+        var logs = [
+            { IPaddress: "127.0.0.1", timestamp: "2025-05-16 12:01:15", status: "500", useragent: "Mozilla/5.0", responsetime: 0.002 },
+            { IPaddress: "192.168.1.5", timestamp: "2025-05-16 12:00:10", status: "200", useragent: "curl/7.64.1", responsetime: 0.005 },
+            { IPaddress: "10.0.0.2", timestamp: "2025-05-15 11:59:59", status: "404", useragent: "PostmanRuntime", responsetime: 0.003 },
+            { IPaddress: "127.0.0.1", timestamp: "2025-05-15 11:58:44", status: "302", useragent: "Mozilla/5.0", responsetime: 0.001 }
+        ];
+
+        logs = {{ log_list | tojson }};
+
+        console.log(logs)
+
+        let currentSort = { column: null, direction: 'asc' };
+
+        function renderTable(data) {
+            const tbody = document.querySelector("#logTable tbody");
+            tbody.innerHTML = "";
+
+            data.forEach(log => {
+                let statusClass = "";
+                const statusGroup = Math.floor(log.status_code / 100);
+                if (statusGroup === 2) {
+                    statusClass = "text-green-600";
+                } else if (statusGroup === 3) {
+                    statusClass = "text-blue-600";
+                } else if (statusGroup === 4) {
+                    statusClass = "text-yellow-600";
+                } else if (statusGroup === 5) {
+                    statusClass = "text-red-600";
+                }
+                const tr = document.createElement("tr");
+              
+                tr.innerHTML = `
+          <td class="w-1/6 font-medium text-blue-600"><a href="/ip/${encodeURIComponent(log.ip)}">${log.ip}</a></td>
+          <td class="w-1/6">${log.time}</td>
+          <td class="w-1/6">${log.http_method}</td>
+          <td class="${statusClass} font-medium w-1/6">${log.status_code}</td>
+          <td class="text-left w-1/6">${log.user_agent}</td>
+          <td class="text-left w-1/6">${log.path}</td>
+        `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function filterLogs() {
+
+            const statusValue = document.getElementById("statusFilter").value;
+            const dateValue = document.getElementById("dateFilter").value;
+            const userAgentValue = document.getElementById("userAgentFilter").value.toLowerCase();
+
+            let filtered = logs.filter(log => {
+                const matchesStatus = statusValue === "All" || log.status_code.toString().startsWith(statusValue);
+                const matchesDate = !dateValue || log.time.startsWith(dateValue);
+                const matchesUA = !userAgentValue || log.user_agent.toLowerCase().includes(userAgentValue);
+                return matchesStatus && matchesDate && matchesUA;
+            });
+
+            if (currentSort.column) {
+                filtered = sortData(filtered, currentSort.column);
+            }
+
+            renderTable(filtered);
+        }
+
+        function sortData(data, column) {
+            const direction = currentSort.direction;
+
+            return data.slice().sort((a, b) => {
+                let valA = a[column];
+                let valB = b[column];
+
+                if (column === 'time') {
+                    valA = new Date(valA);
+                    valB = new Date(valB);
+                }
+
+                if (typeof valA === "string") valA = valA.toLowerCase();
+                if (typeof valB === "string") valB = valB.toLowerCase();
+
+                if (valA < valB) return direction === 'asc' ? -1 : 1;
+                if (valA > valB) return direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+        }
+
+        function sortTable(column) {
+            if (currentSort.column === column) {
+                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.column = column;
+                currentSort.direction = 'asc';
+            }
+
+            updateHeaderSortIndicators();
+            filterLogs();
+        }
+
+        function updateHeaderSortIndicators() {
+            document.querySelectorAll("th").forEach(th => {
+                th.classList.remove("sort-asc", "sort-desc");
+                if (th.dataset.column === currentSort.column) {
+                    th.classList.add(currentSort.direction === "asc" ? "sort-asc" : "sort-desc");
+                }
+            });
+        }
+
+        // Event listeners
+        document.getElementById("statusFilter").addEventListener("change", filterLogs);
+        document.getElementById("dateFilter").addEventListener("input", filterLogs);
+        document.getElementById("userAgentFilter").addEventListener("input", filterLogs);
+        document.querySelectorAll("th").forEach(th => {
+            th.addEventListener("click", () => sortTable(th.dataset.column));
+        });
+
+        // Initial render
+        renderTable(logs);
+    </script>
+
+{% endblock %}
+
+
